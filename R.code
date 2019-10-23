@@ -1,0 +1,93 @@
+# installing requred Libraries
+
+library(twitteR)
+library(graphics)
+library(RcolorBrewer)
+library(purrr)
+library(stringr)
+install.packages("tm")
+install.packages("NLP")
+install.packages("syuzhet")
+library(NLP)
+library(tm)
+library(syuzhet)
+library(dplyr)
+library(tibble)
+
+#setting Twitter authentication
+
+api_key <- "xxxxxxxxx"
+api_secret <- "xxxxxxxxx"
+access_token <- "xxxxxxxxx"
+access_token_secret <- "xxxxxxxxx"
+
+# Set constant requestURL
+requestURL <- "https://api.twitter.com/oauth/request_token"
+# Set constant accessURL
+accessURL <- "https://api.twitter.com/oauth/access_token"
+# Set constant authURL
+authURL <- "https://api.twitter.com/oauth/authorize"
+
+setup_twitter_oauth(api_key,api_secret,access_token,access_token_secret)
+
+#Objectname <- searchTwitter(searchString, n=no.of tweets, lang=NULL)
+# 
+
+#Storing Tweets
+namo <- searchTwitter('narendra modi', n=3000, lang="en")
+# length (namo)
+# namo
+# #homeTimeline (n=15) #tweets from Modi's timeline
+# #mentions (n=15) #tweets where Modi have been tagged
+
+# tweet <- userTimeline('@XXXX',n=100)
+
+
+no.of.tweets <- 1000
+#storing tweets with various combinations
+
+hbd <- searchTwitter('#HappyBdayPMModi', n=no.of.tweets, lang="en")
+hbd2 <- searchTwitter('#happybirthdaynarendramodi', n=no.of.tweets, lang="en")
+hbd3 <- searchTwitter('#HappyBirthdayPMModi', n=no.of.tweets, lang="en")
+hbd4 <- searchTwitter('#SharamKaroGateKholo', n=no.of.tweets, lang="en")
+hbd5 <- searchTwitter('#HappyBDayPMModiJi', n=no.of.tweets, lang="en")
+hbd6 <- searchTwitter('#NarendraModiBirthday', n=no.of.tweets, lang="en")
+
+hbdnamo <- tbl_df(map_df(c(namo),as.data.frame))
+write.csv(hbdnamo,file = "hbdnamo.csv",row.names = FALSE)
+
+# intstalling packages for data cleaning 
+
+install.packages("SnowballC")
+library(wordcloud)
+library(SnowballC)
+library(tm)
+install.packages("textclean")
+library(textclean)
+
+#Data Cleaning
+namo_corpus <- Corpus(VectorSource(hbdnamo$text))
+inspect(namo_corpus[1:10])
+which(duplicated(namo_corpus)) # check for duplicates
+
+namo_corpus <- tm_map(namo_corpus, content_transformer(tolower))
+namo_corpus <- tm_map(namo_corpus, removePunctuation)
+namo_corpus <- tm_map(namo_corpus, removeWords,stopwords("en"))
+namo_corpus <- tm_map(namo_corpus,removeNumbers)
+namo_corpus <- tm_map(namo_corpus,removeWords,c("rt"))
+
+removeURL <- function(x) gsub('http[[:alnum:]]*', '', x)
+namo_corpus <- tm_map(namo_corpus, content_transformer(removeURL))
+
+removeNonAscii <- function(x)textclean::replace_non_ascii(x)
+namo_corpus <- tm_map(namo_corpus,content_transformer(removeNonAscii))
+namo_corpus <- tm_map(namo_corpus,stripWhitespace)
+
+
+#Basic Sentiment Analysis using get_nrc_sentiment function
+
+emotions <- get_nrc_sentiment(namo_corpus$content)
+barplot(colSums(emotions),cex.names = .7,col = Accent(10),
+        main = "sentiments scores for tweets")
+        
+        
